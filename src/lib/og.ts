@@ -24,7 +24,7 @@ function roundRect(ctx: SKRSContext2D, x: number, y: number, w: number, h: numbe
  * Social card: headline on the left, a phone on the right showing a real render of the Panic style.
  * Fonts are registered by renderWallpaper(), which runs first.
  */
-export async function renderOgImage(domain = 'countdown-app-olive-eight.vercel.app'): Promise<Buffer> {
+export async function renderOgImage(domain = 'countdown.myludus.me'): Promise<Buffer> {
   const wallpaper = await loadImage(renderWallpaper({ ...SAMPLE, now: new Date('2026-09-19T08:00:00Z'), style: 'panic' }));
 
   const canvas = createCanvas(OG_WIDTH, OG_HEIGHT);

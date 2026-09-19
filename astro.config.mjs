@@ -7,7 +7,7 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://countdown-app-olive-eight.vercel.app',
+  site: 'https://countdown.myludus.me',
   // Static pages by default; /api/* routes opt in with `prerender = false`.
   output: 'static',
   integrations: [vue()],
