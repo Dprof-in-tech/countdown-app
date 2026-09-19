@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-bg: #000000;
+  --color-card: #0a0a0a;
+  --color-line: #262626;
+  --color-muted: #8a8a8a;
+  --color-dim: #5c5c5c;
+  --color-field: #111111;
+}
+
+html { background: var(--color-bg); color: #fff; }
+body { font-family: var(--font-sans); letter-spacing: -0.01em; }
+
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40; }
+@utility btn-primary { @apply btn border-white bg-white text-black hover:border-neutral-200 hover:bg-neutral-200; }
+@utility btn-outline { @apply btn border-line bg-transparent text-white hover:bg-white/5; }
+@utility btn-text { @apply text-sm text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40; }
+@utility card { @apply rounded-lg border border-line bg-card; }
+@utility field { @apply w-full rounded-md border border-line bg-field px-3 py-2 text-sm text-white placeholder:text-dim focus:border-neutral-500 focus:outline-none; }
+@utility step-num { @apply flex h-8 w-8 shrink-0 items-center justify-center bg-white text-sm font-semibold text-black; }

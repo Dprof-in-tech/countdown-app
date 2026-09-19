@@ -1,0 +1,93 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { metrics } from '../lib/metrics';
+export const prerender = false;
+
+const stats = await metrics().getStats();
+const { renders, uniques, events } = stats;
+const maxDay = Math.max(1, ...renders.last14.map((d) => d.count));
+const maxStyle = Math.max(1, ...renders.byStyle.map((s) => s.count));
+const styles = [...renders.byStyle].sort((a, b) => b.count - a.count);
+const fmt = (n: number) => n.toLocaleString('en-US');
+const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+Astro.response.headers.set('Cache-Control', 'public, max-age=60');
+---
+<Layout title="Usage · Exam Countdown">
+  <div class="flex items-baseline justify-between">
+    <h1 class="text-4xl font-bold tracking-[-0.03em]">Usage</h1>
+    <a href="/" class="btn-text text-xs">← Back</a>
+  </div>
+  <p class="mt-3 max-w-xl text-muted">
+    Public, anonymous numbers. Nothing here can identify anyone: renders are plain counters, and "unique wallpapers"
+    is estimated from a salted hash that rotates every day.
+  </p>
+
+  {!stats.configured && (
+    <p class="card mt-8 p-6 text-sm text-muted">Metrics store isn't configured in this environment, so everything reads zero.</p>
+  )}
+
+  <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
+    {[
+      ['Renders today', renders.today],
+      ['Renders, all time', renders.total],
+      ['Unique wallpapers today', uniques.today],
+      ['Unique wallpapers this month', uniques.month],
+    ].map(([label, value]) => (
+      <div class="card p-5">
+        <div class="text-3xl font-bold tracking-[-0.02em]">{fmt(value as number)}</div>
+        <div class="mt-1 text-xs text-muted">{label}</div>
+      </div>
+    ))}
+  </div>
+
+  <section class="mt-12">
+    <h2 class="text-lg font-semibold">Renders, last 14 days</h2>
+    <div class="card mt-3 p-5">
+      <div class="flex h-40 items-end gap-1.5">
+        {renders.last14.map((d) => (
+          <div class="group relative flex flex-1 flex-col items-center justify-end" title={`${dayLabel(d.date)}: ${fmt(d.count)}`}>
+            <div class="w-full rounded-sm bg-white" style={`height:${Math.max(2, (d.count / maxDay) * 100)}%`}></div>
+          </div>
+        ))}
+      </div>
+      <div class="mt-2 flex justify-between text-[11px] text-dim">
+        <span>{dayLabel(renders.last14[0].date)}</span>
+        <span>{dayLabel(renders.last14[renders.last14.length - 1].date)}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-12 grid gap-10 sm:grid-cols-2">
+    <div>
+      <h2 class="text-lg font-semibold">Most popular styles</h2>
+      <ul class="mt-3 space-y-3">
+        {styles.map((s, i) => (
+          <li>
+            <div class="flex items-baseline justify-between text-sm">
+              <span><span class="text-dim">{i + 1}.</span> {s.name}</span>
+              <span class="text-muted">{fmt(s.count)}</span>
+            </div>
+            <div class="mt-1 h-1.5 w-full rounded-full bg-white/10">
+              <div class="h-1.5 rounded-full bg-white" style={`width:${(s.count / maxStyle) * 100}%`}></div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div>
+      <h2 class="text-lg font-semibold">Where renders come from</h2>
+      <dl class="card mt-3 divide-y divide-line text-sm">
+        <div class="flex justify-between p-4"><dt class="text-muted">Shortcut / direct fetches</dt><dd>{fmt(renders.bySource.fetch)}</dd></div>
+        <div class="flex justify-between p-4"><dt class="text-muted">Live previews on the page</dt><dd>{fmt(renders.bySource.preview)}</dd></div>
+      </dl>
+      <h2 class="mt-8 text-lg font-semibold">Funnel</h2>
+      <dl class="card mt-3 divide-y divide-line text-sm">
+        <div class="flex justify-between p-4"><dt class="text-muted">Schedules saved</dt><dd>{fmt(events.save)}</dd></div>
+        <div class="flex justify-between p-4"><dt class="text-muted">Links copied</dt><dd>{fmt(events.copy)}</dd></div>
+        <div class="flex justify-between p-4"><dt class="text-muted">Install guide opened</dt><dd>{fmt(events.install_open)}</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <p class="mt-12 text-xs text-dim">Raw JSON at <a href="/api/stats" class="underline">/api/stats</a>. Updated every minute.</p>
+</Layout>

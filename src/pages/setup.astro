@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import InstallSteps from '../components/InstallSteps.vue';
+export const prerender = true;
+---
+<Layout title="Install · Exam Countdown">
+  <InstallSteps client:load standalone />
+</Layout>
