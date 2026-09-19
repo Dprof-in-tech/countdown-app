@@ -45,8 +45,17 @@ Key decisions:
 ### `POST /api/parse`
 Body `{ "text": "Course, Date, Time\n…" }` → `{ success, exams }` or `422 { success: false, errors: [{ line, message }] }`.
 
+The date and time are located anywhere in the line; the title is whatever precedes the date. Separators can be commas, colons, dashes or pipes, weekday annotations like `(Monday)` are ignored, and anything after the time (`3 hours`, `Hall B`) is dropped. So all of these work:
+
+```
+EEE 576: Introduction to Optimal Control, 28 Sep 2026 (Monday), 9:00 am, 3 hours
+CVE 551: 05 oct 2026- 9:00am
+MTH 101 - Calculus I | 12/10/2026 | 2pm
+PHY 202 Waves: Friday 16 Oct 2026 at 14:30 (Hall B)
+```
+
 Accepted dates: `28 Sep 2026`, `Sep 28, 2026`, `Mon, 28 Sep 2026`, `09/28/2026`, `28/09/2026` (when day > 12), `2026-09-28`.
-Accepted times: `9:00 am`, `9am`, `09:00`, `14:30`, `2.30 pm`.
+Accepted times: `9:00 am`, `9am`, `09:00`, `14:30`, `2.30 pm`. A bare number without minutes or am/pm is not treated as a time.
 
 ### `GET /api/wallpaper?exams=<url-encoded JSON>&tz=<IANA zone>&style=minimal|call|sign`
 `exams` is `[{ "title", "date": "YYYY-MM-DD", "time": "HH:MM" }]`. Returns `image/png`, `Cache-Control: no-cache, no-store`.

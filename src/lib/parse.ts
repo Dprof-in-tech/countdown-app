@@ -110,26 +110,52 @@ export function toExam(input: ExamInput, id = makeId()): Exam {
   };
 }
 
-/** Parse a single "Title, Date, Time" line. Title may itself contain commas. */
-export function parseLine(line: string): { exam?: ExamInput; error?: string } {
-  const parts = line.split(',').map((p) => p.trim()).filter(Boolean);
-  if (parts.length < 3) return { error: FORMAT_ERROR };
+const WEEKDAY = '(?:mon|tue|wed|thu|fri|sat|sun)[a-z]*';
+const MONTH_NAME = '[a-z]{3,9}\\.?';
+/** Anything that looks like a date, in any of the accepted shapes, optionally led by a weekday. */
+const DATE_RE = new RegExp(
+  `(?:\\b${WEEKDAY},?\\s+)?(?:` +
+    `\\b\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}\\b` +                 // 2026-09-28
+    `|\\b\\d{1,2}(?:st|nd|rd|th)?[\\s-]+${MONTH_NAME}[\\s,-]+\\d{4}\\b` + // 28 Sep 2026
+    `|\\b${MONTH_NAME}\\s+\\d{1,2}(?:st|nd|rd|th)?,?\\s+\\d{4}\\b` + // Sep 28, 2026
+    `|\\b\\d{1,2}[/.-]\\d{1,2}[/.-]\\d{4}\\b` +               // 09/28/2026
+  `)`,
+  'i',
+);
+/** A time needs minutes or an am/pm marker — a bare number is too ambiguous ("3 hours"). */
+const TIME_RE = /\b\d{1,2}(?:[:.]\d{2})?\s*(?:am|pm|a\.m\.|p\.m\.)(?![a-z])|\b\d{1,2}[:.]\d{2}\b/i;
 
-  const timeRaw = parts[parts.length - 1];
-  // Date may be "Mon, 28 Sep 2026" — try the last one or two chunks before the time.
-  let dateEnd = parts.length - 1;
-  let date = parseDate(parts[dateEnd - 1]);
-  let dateStart = dateEnd - 1;
-  if (!date && dateEnd - 2 >= 1) {
-    date = parseDate(`${parts[dateEnd - 2]}, ${parts[dateEnd - 1]}`);
-    dateStart = dateEnd - 2;
-  }
+/** Strip "(Monday)"-style annotations and the junk that separates fields: commas, colons, dashes, pipes, "at", "on". */
+const stripAnnotations = (s: string) => s.replace(new RegExp(`\\(\\s*${WEEKDAY}\\s*\\)`, 'gi'), ' ');
+const trimSeparators = (s: string) => s.replace(/^[\s,:;|–—-]+|[\s,:;|–—-]+$/g, '').replace(/\s+(?:on|at)$/i, '').trim();
+
+/**
+ * Parse a single line. The date and time are located anywhere in the line; the title is whatever
+ * precedes the date. Extra fields after the time (durations, venues) are ignored.
+ */
+export function parseLine(line: string): { exam?: ExamInput; error?: string } {
+  const text = stripAnnotations(line).replace(/\s+/g, ' ').trim();
+  if (!text) return { error: FORMAT_ERROR };
+
+  const dateMatch = DATE_RE.exec(text);
+  if (!dateMatch) return { error: FORMAT_ERROR };
+  const date = parseDate(dateMatch[0]);
   if (!date) return { error: DATE_ERROR };
 
-  const time = parseTime(timeRaw);
+  const before = text.slice(0, dateMatch.index);
+  const after = text.slice(dateMatch.index + dateMatch[0].length);
+  // Prefer a time after the date; fall back to one before it ("9:00 am, 28 Sep 2026")
+  let timeMatch = TIME_RE.exec(after);
+  let title = before;
+  if (!timeMatch) {
+    timeMatch = TIME_RE.exec(before);
+    if (timeMatch) title = before.slice(0, timeMatch.index) + before.slice(timeMatch.index + timeMatch[0].length);
+  }
+  if (!timeMatch) return { error: TIME_ERROR };
+  const time = parseTime(timeMatch[0]);
   if (!time) return { error: TIME_ERROR };
 
-  const title = parts.slice(0, dateStart).join(', ');
+  title = trimSeparators(title);
   if (!title) return { error: FORMAT_ERROR };
   return { exam: { title, date, time } };
 }

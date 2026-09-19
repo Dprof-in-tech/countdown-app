@@ -83,6 +83,31 @@ EEE 512: Renewable, New & Emerging Energy Systems, 5 Oct 2026, 9:00 am
     expect(result.exams[0].title).toBe('EEE 512: Renewable, New & Emerging Energy Systems');
   });
 
+  it('tolerates weekday annotations, durations and loose separators', () => {
+    const result = parseExams(`EEE 576: Introduction to Optimal Control, 28 Sep 2026 (Monday), 9:00 am, 3 hours
+EEE 574: Discrete Control Systems, 2 Oct 2026 (Friday), 9:00 am, 3 hours
+CVE 551: 05 oct 2026- 9:00am
+MTH 101 - Calculus I | 12/10/2026 | 2pm
+PHY 202 Waves: Friday 16 Oct 2026 at 14:30 (Hall B)
+CHM 110: 2026-10-20 8am`);
+    expect(result.errors).toEqual([]);
+    expect(result.exams.map((e) => [e.title, e.date, e.time])).toEqual([
+      ['EEE 576: Introduction to Optimal Control', '2026-09-28', '09:00'],
+      ['EEE 574: Discrete Control Systems', '2026-10-02', '09:00'],
+      ['CVE 551', '2026-10-05', '09:00'],
+      ['PHY 202 Waves', '2026-10-16', '14:30'],
+      ['CHM 110', '2026-10-20', '08:00'],
+      ['MTH 101 - Calculus I', '2026-12-10', '14:00'], // sorted: 12/10 is December
+    ]);
+  });
+
+  it('accepts time before date and still reports a missing time', () => {
+    expect(parseExams('EEE 576, 9:00 am, 28 Sep 2026').exams[0]).toMatchObject({ title: 'EEE 576', date: '2026-09-28', time: '09:00' });
+    const missing = parseExams('EEE 576, 28 Sep 2026');
+    expect(missing.success).toBe(false);
+    expect(missing.errors[0].message).toMatch(/Invalid time/);
+  });
+
   it('assigns a stable colour per exam', () => {
     const result = parseExams('EEE 576, 28 Sep 2026, 9:00 am');
     expect(result.exams[0].color).toMatch(/^#[0-9a-f]{6}$/i);
