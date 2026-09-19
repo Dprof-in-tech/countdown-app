@@ -138,11 +138,18 @@ export function createMetrics(store: MetricsStore | null) {
 
 let _metrics: ReturnType<typeof createMetrics> | null = null;
 
-/** Process-wide metrics bound to Upstash when its env vars exist; a silent no-op otherwise (local dev). */
+/**
+ * Process-wide metrics bound to Upstash when its env vars exist; a silent no-op otherwise (local dev).
+ * The Vercel Marketplace install names the vars KV_REST_API_*; a direct Upstash setup uses UPSTASH_REDIS_REST_*.
+ */
 export function metrics() {
   if (!_metrics) {
-    const configured = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
-    _metrics = createMetrics(configured ? (Redis.fromEnv() as unknown as MetricsStore) : null);
+    // Vercel runtime sets process.env; the Vite dev server exposes .env.local through import.meta.env
+    const env = (k: string): string | undefined =>
+      process.env[k] ?? ((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.[k]);
+    const url = env('KV_REST_API_URL') ?? env('UPSTASH_REDIS_REST_URL');
+    const token = env('KV_REST_API_TOKEN') ?? env('UPSTASH_REDIS_REST_TOKEN');
+    _metrics = createMetrics(url && token ? (new Redis({ url, token }) as unknown as MetricsStore) : null);
   }
   return _metrics;
 }
