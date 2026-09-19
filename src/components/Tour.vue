@@ -69,13 +69,14 @@ const tip = computed(() => {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-[60]" role="dialog" aria-modal="true" :aria-label="current.title">
+  <!-- pointer-events-none on the layer so the page underneath stays fully usable; only the tooltip is interactive -->
+  <div class="pointer-events-none fixed inset-0 z-[60]" role="dialog" :aria-label="current.title">
     <!-- cut-out: the shadow darkens everything except the target -->
     <div v-if="spotlight" class="pointer-events-none fixed rounded-lg border border-white transition-all duration-200"
       :style="{ ...spotlight, boxShadow: '0 0 0 100vmax rgba(0,0,0,0.78)' }"></div>
     <div v-else class="pointer-events-none fixed inset-0 bg-black/78"></div>
 
-    <div class="card fixed p-5 shadow-2xl transition-all duration-200" :style="tip">
+    <div class="card pointer-events-auto fixed p-5 shadow-2xl transition-all duration-200" :style="tip">
       <div class="flex items-start justify-between gap-3">
         <div class="text-xs text-dim">Step {{ step + 1 }} of {{ steps.length }}</div>
         <button type="button" class="btn-text -mr-1 -mt-1 px-1 text-lg leading-none" aria-label="Close walkthrough" @click="emit('close')">×</button>
