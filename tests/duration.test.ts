@@ -61,10 +61,10 @@ describe('exam end time', () => {
     expect(examEndsAt(exam('A', '2026-09-28', '09:00', 180), 'UTC')).toBe(Date.parse('2026-09-28T12:00:00Z'));
   });
 
-  it('falls back to end of the calendar day when no duration is known', () => {
-    // Midnight ending the 28th in Lagos is 23:00Z on the 28th
-    expect(examEndsAt(exam('A', '2026-09-28', '09:00'), 'Africa/Lagos')).toBe(Date.parse('2026-09-28T23:00:00Z'));
-    expect(examEndsAt(exam('A', '2026-09-28', '09:00'), 'UTC')).toBe(Date.parse('2026-09-29T00:00:00Z'));
+  it('assumes three hours when the schedule does not say', () => {
+    // 09:00 Lagos is 08:00Z, so the assumed end is 11:00Z
+    expect(examEndsAt(exam('A', '2026-09-28', '09:00'), 'Africa/Lagos')).toBe(Date.parse('2026-09-28T11:00:00Z'));
+    expect(examEndsAt(exam('A', '2026-09-28', '09:00'), 'UTC')).toBe(Date.parse('2026-09-28T12:00:00Z'));
   });
 
   it('handles a duration that runs past midnight', () => {
@@ -99,10 +99,14 @@ describe('rolling over when an exam ends', () => {
     expect(findNextExam(exams, at('2026-09-28T10:30:00Z'), 'Africa/Lagos')?.title).toBe('EEE 576');
   });
 
-  it('without a duration, still rolls over at midnight as before', () => {
+  it('rolls over on the assumed length when none is given — old links included', () => {
     const noDuration = [exam('EEE 576', '2026-09-28', '09:00'), exam('EEE 574', '2026-10-02', '09:00')];
-    expect(findNextExam(noDuration, at('2026-09-28T23:00:00Z'), 'UTC')?.title).toBe('EEE 576');
-    expect(findNextExam(noDuration, at('2026-09-29T00:30:00Z'), 'UTC')?.title).toBe('EEE 574');
+    expect(findNextExam(noDuration, at('2026-09-28T11:00:00Z'), 'UTC')?.title).toBe('EEE 576');
+    expect(findNextExam(noDuration, at('2026-09-28T12:30:00Z'), 'UTC')?.title).toBe('EEE 574');
+  });
+
+  it('never presents an assumed length as if it were known', () => {
+    expect(formatExamDate(exam('A', '2026-09-28', '09:00'))).toBe('Mon, 28 Sep 2026, 9:00 am');
   });
 
   it('reports all exams complete once the last one ends', () => {

@@ -3,6 +3,13 @@ import { sortExams } from './parse';
 
 const DAY_MS = 86_400_000;
 
+/**
+ * Assumed length when a schedule doesn't say. Deliberately generous: lingering a little after an
+ * exam ends is a much smaller sin than replacing it while someone is still sitting it. Only ever a
+ * fallback — an explicit duration always wins, and this is never shown as if it were known.
+ */
+export const DEFAULT_DURATION_MINUTES = 180;
+
 /** Calendar date (Y, M, D) of `now` as seen in `tz`. */
 export function localDateParts(now: Date, tz: string): { y: number; m: number; d: number } {
   let parts: Intl.DateTimeFormatPart[];
@@ -54,15 +61,12 @@ export function zonedToUtc(y: number, m: number, d: number, hh: number, mm: numb
   return naive - tzOffsetMs(utc, tz);
 }
 
-/**
- * When the exam is over, as a UTC timestamp. With a known duration that is start + duration;
- * without one we only know the day, so it runs until that day ends.
- */
+/** When the exam is over, as a UTC timestamp: start + its duration, assumed when not stated. */
 export function examEndsAt(exam: ExamInput, tz: string): number {
   const [y, m, d] = exam.date.split('-').map(Number);
-  if (!exam.durationMinutes) return zonedToUtc(y, m, d + 1, 0, 0, tz);
   const [hh, mm] = exam.time.split(':').map(Number);
-  return zonedToUtc(y, m, d, hh, mm, tz) + exam.durationMinutes * 60_000;
+  const minutes = exam.durationMinutes ?? DEFAULT_DURATION_MINUTES;
+  return zonedToUtc(y, m, d, hh, mm, tz) + minutes * 60_000;
 }
 
 /** First exam that has not finished yet, by date then time. */
@@ -101,12 +105,10 @@ export function getCountdown(exams: ExamInput[], now: Date, tz: string): Countdo
   if (!next) {
     return { title: 'Exams complete!', days: null, dateLabel: '', index: sorted.length, total: sorted.length, progress: 1 };
   }
+  // Exams finished, not calendar days: the bar moves the moment you walk out of one, and it always
+  // agrees with the "Exam N of M" line beside it.
   const index = sorted.indexOf(next);
-  const first = isoToUtcMidnight(sorted[0].date);
-  const last = isoToUtcMidnight(sorted[sorted.length - 1].date);
-  const { y, m, d } = localDateParts(now, tz);
-  const today = Date.UTC(y, m - 1, d);
-  const progress = last > first ? Math.min(1, Math.max(0, (today - first) / (last - first))) : 0;
+  const progress = index / sorted.length;
   return {
     title: next.title,
     days: daysUntil(next, now, tz),

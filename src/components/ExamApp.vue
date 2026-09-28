@@ -314,7 +314,7 @@ function downloadJson() {
                   <input :value="exam.time" @change="updateField(exam, 'time', ($event.target as HTMLInputElement).value)" class="cell font-mono" />
                 </td>
                 <td class="px-1 py-1">
-                  <input :value="formatDuration(exam.durationMinutes)" placeholder="—" title="How long it runs, e.g. 3h or 90m. Leave blank if you don't know."
+                  <input :value="formatDuration(exam.durationMinutes)" placeholder="—" title="How long it runs, e.g. 3h or 90m. Left blank, 3 hours is assumed."
                     @change="updateField(exam, 'duration', ($event.target as HTMLInputElement).value)" class="cell font-mono" />
                   <p v-if="rowErrors[exam.id]" class="px-2 pb-1 text-xs text-white">{{ rowErrors[exam.id] }}</p>
                 </td>
