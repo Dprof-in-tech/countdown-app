@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Exam, ParseError } from '../lib/types';
-import { parseExams, parseDate, parseTime, sortExams, toExam } from '../lib/parse';
+import { parseExams, parseDate, parseDuration, parseTime, sortExams, toExam } from '../lib/parse';
 import { clearExams, guideSeen, loadExams, loadStyle, markGuideSeen, saveExams, saveStyle, storageAvailable } from '../lib/storage';
 import { buildWallpaperUrl } from '../lib/link';
 import { getCountdown } from '../lib/countdown';
@@ -112,9 +112,25 @@ function useSample() {
 
 /** Row-level edits: keep date/time normalised so bad values can't reach the wallpaper. */
 const rowErrors = ref<Record<string, string>>({});
-function updateField(exam: Exam, field: 'title' | 'date' | 'time', value: string) {
+function updateField(exam: Exam, field: 'title' | 'date' | 'time' | 'duration', value: string) {
   if (field === 'title') {
     exam.title = value.trim();
+    return;
+  }
+  if (field === 'duration') {
+    // Blank is valid: it means "unknown", and the exam then runs until the end of its day.
+    if (!value.trim()) {
+      delete exam.durationMinutes;
+      delete rowErrors.value[exam.id];
+      return;
+    }
+    const minutes = parseDuration(value);
+    if (!minutes) {
+      rowErrors.value[exam.id] = 'Length not understood — try 3h or 90m';
+      return;
+    }
+    delete rowErrors.value[exam.id];
+    exam.durationMinutes = minutes;
     return;
   }
   const parsed = field === 'date' ? parseDate(value) : parseTime(value);
@@ -125,6 +141,14 @@ function updateField(exam: Exam, field: 'title' | 'date' | 'time', value: string
   delete rowErrors.value[exam.id];
   exam[field] = parsed;
   exam.datetime = `${exam.date}T${exam.time}:00`;
+}
+
+/** "3h", "90m", "2h 30m" — how a stored duration is shown in the table. */
+function formatDuration(minutes?: number): string {
+  if (!minutes) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return [h ? `${h}h` : '', m ? `${m}m` : ''].filter(Boolean).join(' ');
 }
 
 function remove(id: string) {
@@ -274,6 +298,7 @@ function downloadJson() {
                 <th class="min-w-[16rem] px-3 py-2.5 font-medium">Course</th>
                 <th class="w-36 px-3 py-2.5 font-medium">Date</th>
                 <th class="w-24 px-3 py-2.5 font-medium">Time</th>
+                <th class="w-24 px-3 py-2.5 font-medium">Length</th>
                 <th class="w-28 px-3 py-2.5"></th>
               </tr>
             </thead>
@@ -287,6 +312,10 @@ function downloadJson() {
                 </td>
                 <td class="px-1 py-1">
                   <input :value="exam.time" @change="updateField(exam, 'time', ($event.target as HTMLInputElement).value)" class="cell font-mono" />
+                </td>
+                <td class="px-1 py-1">
+                  <input :value="formatDuration(exam.durationMinutes)" placeholder="—" title="How long it runs, e.g. 3h or 90m. Leave blank if you don't know."
+                    @change="updateField(exam, 'duration', ($event.target as HTMLInputElement).value)" class="cell font-mono" />
                   <p v-if="rowErrors[exam.id]" class="px-2 pb-1 text-xs text-white">{{ rowErrors[exam.id] }}</p>
                 </td>
                 <td class="whitespace-nowrap px-2 py-1.5 text-right">

@@ -57,6 +57,8 @@ PHY 202 Waves: Friday 16 Oct 2026 at 14:30 (Hall B)
 Accepted dates: `28 Sep 2026`, `Sep 28, 2026`, `Mon, 28 Sep 2026`, `09/28/2026`, `28/09/2026` (when day > 12), `2026-09-28`.
 Accepted times: `9:00 am`, `9am`, `09:00`, `14:30`, `2.30 pm`. A bare number without minutes or am/pm is not treated as a time.
 
+**How long it runs** is picked up too, either as a stated length (`3 hours`, `3h`, `90 mins`, `2h 30m`) or an end time (`9:00am - 12:00pm`). It decides when the wallpaper moves on: an exam with a known length is replaced by the next one as soon as it finishes, so back-to-back exams on the same day each get their turn. Without a length the exam runs until the end of its calendar day, which is the original behaviour — existing wallpaper links keep working unchanged.
+
 ### `GET /api/wallpaper?exams=<url-encoded JSON>&tz=<IANA zone>&style=minimal|call|sign`
 `exams` is `[{ "title", "date": "YYYY-MM-DD", "time": "HH:MM" }]`. Returns `image/png`, `Cache-Control: no-cache, no-store`.
 

@@ -3,8 +3,10 @@ export interface Exam {
   title: string;
   /** ISO date, e.g. "2026-09-28" */
   date: string;
-  /** 24-hour time, e.g. "09:00" */
+  /** 24-hour start time, e.g. "09:00" */
   time: string;
+  /** How long the exam runs, when the schedule says so. Drives roll-over to the next exam. */
+  durationMinutes?: number;
   /** Naive ISO datetime (no zone) — "2026-09-28T09:00:00" */
   datetime: string;
   /** Hex colour used as an accent in the UI */
@@ -12,7 +14,7 @@ export interface Exam {
 }
 
 /** The subset of an exam that travels in the wallpaper URL. */
-export type ExamInput = Pick<Exam, 'title' | 'date' | 'time'>;
+export type ExamInput = Pick<Exam, 'title' | 'date' | 'time' | 'durationMinutes'>;
 
 export interface ParseError {
   line: number;

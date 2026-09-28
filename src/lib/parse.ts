@@ -6,6 +6,9 @@ const MONTHS: Record<string, number> = {
   sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
 };
 
+/** Longest plausible exam; anything above this is read as something other than a duration. */
+export const MAX_DURATION_MINUTES = 720;
+
 export const DATE_ERROR = "Invalid date. Use format like '28 Sep 2026' or '09/28/2026'";
 export const TIME_ERROR = "Invalid time. Use format like '9:00 am', '09:00' or '9am'";
 export const FORMAT_ERROR = "Couldn't read this line. Use: Course Name, Date, Time";
@@ -75,6 +78,18 @@ export function parseTime(raw: string): string | null {
   return `${pad(h)}:${pad(min)}`;
 }
 
+/** Reads "3 hours", "3hrs", "1.5h", "90 mins", "2h 30m". Returns minutes, or null if it isn't a duration. */
+export function parseDuration(raw: string): number | null {
+  const s = raw.trim().toLowerCase();
+  if (!s) return null;
+  const m = s.match(
+    /^(?:(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b)?[\s,]*(?:(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b)?$/,
+  );
+  if (!m || (!m[1] && !m[2])) return null;
+  const total = Math.round((m[1] ? parseFloat(m[1]) * 60 : 0) + (m[2] ? parseFloat(m[2]) : 0));
+  return total > 0 && total <= MAX_DURATION_MINUTES ? total : null;
+}
+
 /** Deterministic pastel-ish accent colour derived from the title. */
 export function colorFor(title: string): string {
   let hash = 0;
@@ -105,6 +120,7 @@ export function toExam(input: ExamInput, id = makeId()): Exam {
     title: input.title,
     date: input.date,
     time: input.time,
+    ...(input.durationMinutes ? { durationMinutes: input.durationMinutes } : {}),
     datetime: `${input.date}T${input.time}:00`,
     color: colorFor(input.title),
   };
@@ -130,8 +146,32 @@ const stripAnnotations = (s: string) => s.replace(new RegExp(`\\(\\s*${WEEKDAY}\
 const trimSeparators = (s: string) => s.replace(/^[\s,:;|–—-]+|[\s,:;|–—-]+$/g, '').replace(/\s+(?:on|at)$/i, '').trim();
 
 /**
+ * How long the exam runs, read from whatever follows the start time: either an end time
+ * ("9:00 am - 12:00 pm") or a stated length ("3 hours"). Undefined when the line says neither.
+ */
+function durationFrom(rest: string, startTime: string): number | undefined {
+  const endMatch = TIME_RE.exec(rest);
+  if (endMatch) {
+    const end = parseTime(endMatch[0]);
+    if (end) {
+      const [sh, sm] = startTime.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      let diff = eh * 60 + em - (sh * 60 + sm);
+      if (diff < 0) diff += 24 * 60; // finishes after midnight
+      if (diff > 0 && diff <= MAX_DURATION_MINUTES) return diff;
+    }
+  }
+  for (const chunk of rest.split(/[,;|]/)) {
+    const minutes = parseDuration(trimSeparators(chunk));
+    if (minutes) return minutes;
+  }
+  return undefined;
+}
+
+/**
  * Parse a single line. The date and time are located anywhere in the line; the title is whatever
- * precedes the date. Extra fields after the time (durations, venues) are ignored.
+ * precedes the date. A duration or end time after the start time is captured; other trailing
+ * fields (venues, notes) are ignored.
  */
 export function parseLine(line: string): { exam?: ExamInput; error?: string } {
   const text = stripAnnotations(line).replace(/\s+/g, ' ').trim();
@@ -157,7 +197,10 @@ export function parseLine(line: string): { exam?: ExamInput; error?: string } {
 
   title = trimSeparators(title);
   if (!title) return { error: FORMAT_ERROR };
-  return { exam: { title, date, time } };
+
+  const rest = after.slice(timeMatch.index + timeMatch[0].length);
+  const durationMinutes = durationFrom(rest, time);
+  return { exam: { title, date, time, ...(durationMinutes ? { durationMinutes } : {}) } };
 }
 
 export function sortExams<T extends ExamInput>(exams: T[]): T[] {
