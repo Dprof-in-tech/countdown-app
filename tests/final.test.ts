@@ -46,3 +46,10 @@ describe('the last exam reads differently', () => {
     expect(messageFor(null, true)).toBe(messageFor(null, false));
   });
 });
+
+describe('every day of the run-in has its own voice', () => {
+  it('no two days in the final week read the same', () => {
+    const lines = [6, 5, 4, 3, 2, 1, 0].map((d) => messageFor(d, true));
+    expect(new Set(lines).size).toBe(lines.length);
+  });
+});

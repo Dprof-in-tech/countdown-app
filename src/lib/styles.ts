@@ -23,6 +23,10 @@ export function messageFor(days: number | null, isFinal = false): string {
   if (isFinal) {
     if (days <= 0) return "Last one. Go enjoy it.";
     if (days === 1) return "Tomorrow it's over.";
+    if (days === 2) return 'So close you can taste it.';
+    if (days === 3) return 'Almost there now.';
+    if (days === 4) return 'Nearly through it all.';
+    if (days === 5) return 'The end is in sight.';
     if (days <= 6) return "One left. Then you're free.";
     if (days <= 13) return 'Just the one left now.';
     if (days <= 29) return 'One to go. Nearly there.';

@@ -539,6 +539,10 @@ export function stareLineFor(days: number | null, isFinal = false): string {
   if (isFinal) {
     if (days <= 0) return "Last one. You've got this.";
     if (days === 1) return 'Tomorrow. Then freedom.';
+    if (days === 2) return 'So close. Keep going.';
+    if (days === 3) return 'Last stretch now.';
+    if (days === 4) return 'Nearly rid of me.';
+    if (days === 5) return 'Five more sleeps.';
     if (days <= 6) return 'One left. Almost there.';
     if (days <= 29) return 'Just the one now.';
     return 'One left, eventually.';
@@ -668,6 +672,10 @@ export function panicLineFor(days: number | null, isFinal = false): string {
   if (isFinal) {
     if (days <= 0) return 'TODAY. THEN FREE.';
     if (days === 1) return 'TOMORROW. THEN FREE.';
+    if (days === 2) return 'ALMOST OUT!';
+    if (days === 3) return 'SO CLOSE!';
+    if (days === 4) return 'NEARLY FREE!';
+    if (days === 5) return 'HOME STRAIGHT!';
     if (days <= 6) return 'ONE LEFT!';
     if (days <= 29) return 'One left. Nearly out.';
     return 'One left. Eventually.';
@@ -708,6 +716,8 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.textAlign = 'left';
 
   // --- Character, chest-up, rising from the bottom edge ---
+  // On the last exam the scream becomes a cheer: arms thrown up, eyes shut, laughing.
+  const celebrating = Boolean(data.isFinal) && data.days !== null && mood === 'happy';
   const top = 1700;
   const bodyW = 640;
   const bx = cx - bodyW / 2;
@@ -722,7 +732,13 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
   const handRt = { x: bx + bodyW - 150, y: top + 60 };
   stroke(ctx, 18);
   ctx.beginPath();
-  if (mood !== 'happy') {
+  const cheerL = { x: bx - 40, y: top - 150 };
+  const cheerR = { x: bx + bodyW + 40, y: top - 150 };
+  if (celebrating) {
+    // shoulder, elbow out to the side, hand flung up above the head
+    ctx.moveTo(bx + 40, top + 640); ctx.lineTo(bx - 130, top + 390); ctx.lineTo(cheerL.x, cheerL.y);
+    ctx.moveTo(bx + bodyW - 40, top + 640); ctx.lineTo(bx + bodyW + 130, top + 390); ctx.lineTo(cheerR.x, cheerR.y);
+  } else if (mood !== 'happy') {
     ctx.moveTo(bx + 40, top + 640); ctx.lineTo(bx - 150, top + 260); ctx.lineTo(handL.x, handL.y);
     ctx.moveTo(bx + bodyW - 40, top + 640); ctx.lineTo(bx + bodyW + 150, top + 260); ctx.lineTo(handRt.x, handRt.y);
   } else {
@@ -745,6 +761,32 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.lineTo(bx + bodyW, bottom);
   ctx.fill();
   ctx.stroke();
+
+  // Open hands and bursts of joy around them
+  if (celebrating) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 13;
+    ctx.beginPath();
+    for (const [h, dir] of [[cheerL, -1], [cheerR, 1]] as const) {
+      for (const deg of [-125, -95, -65]) {
+        const a = (deg * Math.PI) / 180;
+        ctx.moveTo(h.x, h.y);
+        ctx.lineTo(h.x + Math.cos(a) * 62 * -dir, h.y + Math.sin(a) * 62);
+      }
+    }
+    ctx.stroke();
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    for (const [h, dir] of [[cheerL, -1], [cheerR, 1]] as const) {
+      for (const [dx, dy, len] of [[-55, -95, 58], [-92, -15, 50], [-72, 60, 46]] as const) {
+        const x0 = h.x + dx * -dir, y0 = h.y + dy;
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + (dx * -dir > 0 ? len : -len) * 0.7, y0 + (dy < 0 ? -len : len) * 0.5);
+      }
+    }
+    ctx.stroke();
+  }
 
   // Face — eyes and mouth lifted from the reference SVG (head 72..191 × 55..135) and mapped onto this crown
   const faceLeft = bx + 65;
@@ -797,9 +839,17 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
 
   ctx.fillStyle = '#ffffff';
   ctx.strokeStyle = '#ffffff';
-  // eyes: close together near the crown, the left one slightly lower
-  ctx.beginPath(); ctx.arc(X(112), Y(72), 15, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(X(145), Y(66), 15, 0, Math.PI * 2); ctx.fill();
+  // eyes: close together near the crown, the left one slightly lower — or shut with delight
+  if (celebrating) {
+    ctx.lineWidth = 13;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(X(112), Y(76), 26, Math.PI, Math.PI * 2);
+    ctx.moveTo(X(145) + 26, Y(70)); ctx.arc(X(145), Y(70), 26, Math.PI * 2, Math.PI, true);
+    ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.arc(X(112), Y(72), 15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(X(145), Y(66), 15, 0, Math.PI * 2); ctx.fill();
+  }
 
   const mouth = () => {
     ctx.beginPath();
@@ -826,7 +876,17 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
     ctx.strokeStyle = '#000000'; ctx.lineWidth = 8 / k; ctx.stroke();
     ctx.restore();
   };
-  if (mood === 'alarmed') {
+  if (celebrating) {
+    // wide open laugh: flat top, round bottom
+    ctx.beginPath();
+    ctx.moveTo(X(101), Y(97));
+    ctx.lineTo(X(166), Y(97));
+    ctx.quadraticCurveTo(X(166), Y(136), X(133.5), Y(136));
+    ctx.quadraticCurveTo(X(101), Y(136), X(101), Y(97));
+    ctx.closePath();
+    ctx.fillStyle = '#000000'; ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 14; ctx.stroke();
+  } else if (mood === 'alarmed') {
     drawMouth(1.3);
     // shake lines outside the elbows
     ctx.strokeStyle = '#ffffff';
