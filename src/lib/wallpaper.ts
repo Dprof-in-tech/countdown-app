@@ -16,6 +16,7 @@ export interface WallpaperData {
   index: number;
   total: number;
   progress: number;
+  isFinal?: boolean;
   now: Date;
   tz: string;
   style?: WallpaperStyle;
@@ -95,6 +96,17 @@ function fitText(ctx: SKRSContext2D, text: string, maxWidth: number, size: numbe
   return { lines: lines.slice(0, maxLines), size };
 }
 
+/** Largest size at or below `size` that keeps `text` on one line. */
+function fitOneLine(ctx: SKRSContext2D, text: string, maxWidth: number, size: number, minSize: number, fontFor: (px: number) => string): number {
+  let px = size;
+  ctx.font = fontFor(px);
+  while (px > minSize && ctx.measureText(text).width > maxWidth) {
+    px -= 4;
+    ctx.font = fontFor(px);
+  }
+  return px;
+}
+
 function drawLines(ctx: SKRSContext2D, lines: string[], x: number, y: number, lineHeight: number): number {
   for (const line of lines) {
     ctx.fillText(line, x, y);
@@ -157,6 +169,11 @@ function paintMinimal(ctx: SKRSContext2D, data: WallpaperData) {
   }
 
   const days = data.days;
+  if (data.isFinal) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = body(40, 'semibold');
+    ctx.fillText('THE LAST ONE', MARGIN, y - 255);
+  }
   const headline = headlineFor(days);
   ctx.fillStyle = '#ffffff';
   ctx.font = display(days > 1 ? 300 : 200);
@@ -200,9 +217,9 @@ function paintProgress(ctx: SKRSContext2D, y: number, data: WallpaperData) {
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
   ctx.font = body(36);
   ctx.textAlign = 'left';
-  ctx.fillText(`Exam ${data.index + 1} of ${data.total}`, MARGIN, y + 70);
+  ctx.fillText(data.isFinal ? 'LAST EXAM' : `Exam ${data.index + 1} of ${data.total}`, MARGIN, y + 70);
   ctx.textAlign = 'right';
-  ctx.fillText(`${Math.round(data.progress * 100)}% through exam period`, W - MARGIN, y + 70);
+  ctx.fillText(data.isFinal ? "then you're free" : `${Math.round(data.progress * 100)}% through exam period`, W - MARGIN, y + 70);
   ctx.textAlign = 'left';
 }
 
@@ -236,8 +253,8 @@ function paintCall(ctx: SKRSContext2D, data: WallpaperData) {
   // Caller
   let y = ay + r + 150;
   ctx.fillStyle = '#ffffff';
-  const caller = data.days === null ? 'REST' : 'EXAM';
-  ctx.font = display(150);
+  const caller = data.days === null ? 'REST' : data.isFinal ? 'LAST EXAM' : 'EXAM';
+  ctx.font = display(fitOneLine(ctx, caller, CONTENT_W, 150, 90, display));
   ctx.fillText(caller, cx, y);
   y += 90;
   ctx.font = body(56);
@@ -484,7 +501,7 @@ function paintSign(ctx: SKRSContext2D, data: WallpaperData) {
   // Message under the character
   ctx.textAlign = 'center';
   ctx.fillStyle = '#ffffff';
-  const msg = fitText(ctx, messageFor(data.days), CONTENT_W, 64, 2, 44, (px) => body(px, 'semibold'));
+  const msg = fitText(ctx, messageFor(data.days, data.isFinal), CONTENT_W, 64, 2, 44, (px) => body(px, 'semibold'));
   drawLines(ctx, msg.lines, W / 2, groundY + 140, msg.size * 1.3);
   ctx.textAlign = 'left';
 }
@@ -500,8 +517,15 @@ function capsule(ctx: SKRSContext2D, x1: number, y1: number, x2: number, y2: num
   ctx.strokeStyle = '#000000'; ctx.lineWidth = thickness - 36; ctx.stroke();
 }
 
-function stareLineFor(days: number | null): string {
+function stareLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "We're done here.";
+  if (isFinal) {
+    if (days <= 0) return 'Last one. Today.';
+    if (days === 1) return 'Tomorrow. The last one.';
+    if (days <= 6) return "One left. Don't fumble it.";
+    if (days <= 29) return 'Just the one now.';
+    return 'One left, eventually.';
+  }
   if (days <= 0) return "It's today.";
   if (days === 1) return 'Tomorrow. Really?';
   if (days <= 6) return 'Seriously?';
@@ -517,8 +541,9 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.textAlign = 'center';
   let y = 900;
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  ctx.font = display(88);
-  ctx.fillText(stareLineFor(data.days), cx, y);
+  const stareLine = stareLineFor(data.days, data.isFinal);
+  ctx.font = display(fitOneLine(ctx, stareLine, CONTENT_W, 88, 54, display));
+  ctx.fillText(stareLine, cx, y);
 
   y += 230;
   ctx.fillStyle = '#ffffff';
@@ -620,8 +645,15 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
 // ---------------------------------------------------------------------------
 // Style: panic — hands on head, mouth wide open. The closer the exam, the louder.
 
-function panicLineFor(days: number | null): string {
+function panicLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "It's over. Breathe.";
+  if (isFinal) {
+    if (days <= 0) return 'LAST ONE. TODAY.';
+    if (days === 1) return 'ONE LEFT. TOMORROW.';
+    if (days <= 6) return 'ONE LEFT.';
+    if (days <= 29) return 'One left. Nearly out.';
+    return 'One left. Eventually.';
+  }
   if (days <= 0) return "IT'S TODAY.";
   if (days === 1) return 'TOMORROW.';
   if (days <= 6) return 'EXAMS.';
@@ -637,8 +669,9 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.textAlign = 'center';
   let y = 900;
   ctx.fillStyle = mood === 'alarmed' ? '#ffffff' : 'rgba(255,255,255,0.6)';
-  ctx.font = display(mood === 'alarmed' ? 110 : 88);
-  ctx.fillText(panicLineFor(data.days), cx, y);
+  const panicLine = panicLineFor(data.days, data.isFinal);
+  ctx.font = display(fitOneLine(ctx, panicLine, CONTENT_W, mood === 'alarmed' ? 110 : 88, 54, display));
+  ctx.fillText(panicLine, cx, y);
   y += 230;
   ctx.fillStyle = '#ffffff';
   if (data.days === null) {

@@ -38,4 +38,6 @@ export interface Countdown {
   total: number;
   /** Fraction of the exam period that has elapsed, 0..1 */
   progress: number;
+  /** The one standing between them and freedom — changes the voice of every style. */
+  isFinal: boolean;
 }

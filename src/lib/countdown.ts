@@ -99,11 +99,11 @@ export function formatExamDate(exam: ExamInput): string {
 export function getCountdown(exams: ExamInput[], now: Date, tz: string): Countdown {
   const sorted = sortExams(exams);
   if (sorted.length === 0) {
-    return { title: 'No exams yet', days: null, dateLabel: '', index: 0, total: 0, progress: 0 };
+    return { title: 'No exams yet', days: null, dateLabel: '', index: 0, total: 0, progress: 0, isFinal: false };
   }
   const next = findNextExam(sorted, now, tz);
   if (!next) {
-    return { title: 'Exams complete!', days: null, dateLabel: '', index: sorted.length, total: sorted.length, progress: 1 };
+    return { title: 'Exams complete!', days: null, dateLabel: '', index: sorted.length, total: sorted.length, progress: 1, isFinal: false };
   }
   // Exams finished, not calendar days: the bar moves the moment you walk out of one, and it always
   // agrees with the "Exam N of M" line beside it.
@@ -116,5 +116,6 @@ export function getCountdown(exams: ExamInput[], now: Date, tz: string): Countdo
     index,
     total: sorted.length,
     progress,
+    isFinal: index === sorted.length - 1,
   };
 }
