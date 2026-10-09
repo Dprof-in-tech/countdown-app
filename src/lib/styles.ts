@@ -21,8 +21,8 @@ export function parseStyle(raw: string | null | undefined): WallpaperStyle {
 export function messageFor(days: number | null, isFinal = false): string {
   if (days === null) return 'Exams done. Go rest.';
   if (isFinal) {
-    if (days <= 0) return "Last one. Go enjoy it.";
-    if (days === 1) return "Tomorrow it's over.";
+    if (days <= 0) return 'Last one. Go enjoy it.';
+    if (days === 1) return "It's nearly over.";
     if (days === 2) return 'So close you can taste it.';
     if (days === 3) return 'Almost there now.';
     if (days === 4) return 'Nearly through it all.';
@@ -32,8 +32,8 @@ export function messageFor(days: number | null, isFinal = false): string {
     if (days <= 29) return 'One to go. Nearly there.';
     return 'One left. Eventually.';
   }
-  if (days <= 0) return "It's today. You've got this.";
-  if (days === 1) return 'Tomorrow. Put the phone down.';
+  if (days <= 0) return "You've got this.";
+  if (days === 1) return 'Last night of cramming.';
   if (days <= 6) return 'Exams are coming. Go study.';
   if (days <= 13) return 'Put your phone down and study.';
   if (days <= 29) return 'Plenty of time. Still — go study.';

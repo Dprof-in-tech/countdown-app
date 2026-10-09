@@ -53,3 +53,13 @@ describe('every day of the run-in has its own voice', () => {
     expect(new Set(lines).size).toBe(lines.length);
   });
 });
+
+describe('the day-of and day-before wording', () => {
+  it('never repeats the word the headline already shouts', () => {
+    // The big word is "Today" / "Tomorrow"; the line above it must not say so again.
+    for (const isFinal of [false, true]) {
+      expect(messageFor(0, isFinal).toLowerCase()).not.toContain('today');
+      expect(messageFor(1, isFinal).toLowerCase()).not.toContain('tomorrow');
+    }
+  });
+});

@@ -143,6 +143,14 @@ const H = WALLPAPER_HEIGHT;
 const MARGIN = 96;
 const CONTENT_W = W - MARGIN * 2;
 
+/**
+ * The line under the big word. "4 days" wants "to EEE 101" after it, but "Today to EEE 101"
+ * is not English — on the day and the day before, the title stands on its own.
+ */
+function subjectLine(days: number, title: string): string {
+  return days > 1 ? `to ${title}` : title;
+}
+
 function headlineFor(days: number): string {
   return days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : String(days);
 }
@@ -180,14 +188,16 @@ function paintMinimal(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.fillText(headline, MARGIN - 8, y);
   const headlineW = ctx.measureText(headline).width;
 
-  ctx.font = body(64, 'semibold');
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  const tag = days === 1 ? 'day to' : days > 1 ? 'days to' : 'is the day for';
-  if (days > 1 && headlineW + 40 + ctx.measureText(tag).width <= CONTENT_W) {
-    ctx.fillText(tag, MARGIN + headlineW + 24, y);
-  } else {
-    y += 90;
-    ctx.fillText(tag, MARGIN, y);
+  if (days > 1) {
+    ctx.font = body(64, 'semibold');
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    const tag = 'days to';
+    if (headlineW + 40 + ctx.measureText(tag).width <= CONTENT_W) {
+      ctx.fillText(tag, MARGIN + headlineW + 24, y);
+    } else {
+      y += 90;
+      ctx.fillText(tag, MARGIN, y);
+    }
   }
 
   y += 130;
@@ -341,7 +351,7 @@ interface Placard { x: number; y: number; w: number; h: number; draw: () => void
 function layoutPlacard(ctx: SKRSContext2D, data: WallpaperData, w: number): Omit<Placard, 'x' | 'y'> & { paint: (x: number, y: number) => void } {
   const pad = 64;
   const headline = data.days === null ? data.title : `${headlineFor(data.days)}${data.days > 1 ? ' days' : ''}`;
-  const sub = data.days === null ? '' : `to ${data.title}`;
+  const sub = data.days === null ? '' : subjectLine(data.days, data.title);
   const head = fitText(ctx, headline, w - pad * 2, data.days !== null && data.days > 1 ? 150 : 110, 2, 70, display);
   const subT = sub ? fitText(ctx, sub, w - pad * 2, 50, 3, 36, (px) => body(px, 'semibold')) : { lines: [] as string[], size: 0 };
   const headLH = head.size * 1.1;
@@ -538,7 +548,7 @@ export function stareLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "We're done here.";
   if (isFinal) {
     if (days <= 0) return "Last one. You've got this.";
-    if (days === 1) return 'Tomorrow. Then freedom.';
+    if (days === 1) return 'One sleep to freedom.';
     if (days === 2) return 'So close. Keep going.';
     if (days === 3) return 'Last stretch now.';
     if (days === 4) return 'Nearly rid of me.';
@@ -547,8 +557,8 @@ export function stareLineFor(days: number | null, isFinal = false): string {
     if (days <= 29) return 'Just the one now.';
     return 'One left, eventually.';
   }
-  if (days <= 0) return "It's today.";
-  if (days === 1) return 'Tomorrow. Really?';
+  if (days <= 0) return 'Go on then.';
+  if (days === 1) return 'Ready?';
   if (days <= 6) return 'Seriously?';
   if (days <= 29) return 'You again?';
   return "Oh, it's you.";
@@ -577,7 +587,7 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
     ctx.font = display(200);
     ctx.fillText(head, cx, y);
     y += 90;
-    const t = fitText(ctx, `to ${data.title}`, CONTENT_W, 54, 2, 40, (px) => body(px, 'semibold'));
+    const t = fitText(ctx, subjectLine(data.days, data.title), CONTENT_W, 54, 2, 40, (px) => body(px, 'semibold'));
     y = drawLines(ctx, t.lines, cx, y, t.size * 1.3);
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = body(40);
@@ -670,8 +680,8 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
 export function panicLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "It's over. Breathe.";
   if (isFinal) {
-    if (days <= 0) return 'TODAY. THEN FREE.';
-    if (days === 1) return 'TOMORROW. THEN FREE.';
+    if (days <= 0) return 'LAST ONE. GO!';
+    if (days === 1) return 'ONE SLEEP. THEN FREE.';
     if (days === 2) return 'ALMOST OUT!';
     if (days === 3) return 'SO CLOSE!';
     if (days === 4) return 'NEARLY FREE!';
@@ -680,8 +690,8 @@ export function panicLineFor(days: number | null, isFinal = false): string {
     if (days <= 29) return 'One left. Nearly out.';
     return 'One left. Eventually.';
   }
-  if (days <= 0) return "IT'S TODAY.";
-  if (days === 1) return 'TOMORROW.';
+  if (days <= 0) return 'THIS IS IT.';
+  if (days === 1) return 'BRACE YOURSELF.';
   if (days <= 6) return 'EXAMS.';
   if (days <= 29) return 'Exams are coming.';
   return 'Exams. Eventually.';
@@ -707,7 +717,7 @@ function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
     ctx.font = display(200);
     ctx.fillText(data.days > 1 ? `${data.days} days` : headlineFor(data.days), cx, y);
     y += 90;
-    const t = fitText(ctx, `to ${data.title}`, CONTENT_W, 54, 2, 40, (px) => body(px, 'semibold'));
+    const t = fitText(ctx, subjectLine(data.days, data.title), CONTENT_W, 54, 2, 40, (px) => body(px, 'semibold'));
     y = drawLines(ctx, t.lines, cx, y, t.size * 1.3);
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = body(40);

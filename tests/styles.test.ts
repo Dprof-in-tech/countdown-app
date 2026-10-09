@@ -38,8 +38,10 @@ describe('wallpaper styles', () => {
 
   it('message escalates as the exam gets closer', () => {
     expect(messageFor(null)).toMatch(/rest/i);
-    expect(messageFor(0)).toMatch(/today/i);
-    expect(messageFor(1)).toMatch(/tomorrow/i);
+    // The wallpaper's big word already says Today/Tomorrow, so the line must not echo it
+    expect(messageFor(0)).not.toMatch(/today/i);
+    expect(messageFor(1)).not.toMatch(/tomorrow/i);
+    expect(messageFor(0)).not.toBe(messageFor(1));
     expect(messageFor(3)).not.toBe(messageFor(10));
     expect(messageFor(10)).not.toBe(messageFor(20));
     expect(messageFor(20)).not.toBe(messageFor(60));
