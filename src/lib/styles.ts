@@ -21,7 +21,7 @@ export function parseStyle(raw: string | null | undefined): WallpaperStyle {
 export function messageFor(days: number | null, isFinal = false): string {
   if (days === null) return 'Exams done. Go rest.';
   if (isFinal) {
-    if (days <= 0) return 'Last one. Go finish it.';
+    if (days <= 0) return "Last one. Go enjoy it.";
     if (days === 1) return "Tomorrow it's over.";
     if (days <= 6) return "One left. Then you're free.";
     if (days <= 13) return 'Just the one left now.';

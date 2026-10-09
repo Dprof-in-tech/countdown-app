@@ -245,6 +245,8 @@ function paintCall(ctx: SKRSContext2D, data: WallpaperData) {
   ctx.beginPath();
   if (data.days === null) {
     ctx.moveTo(cx - 40, ay + 45); ctx.lineTo(cx + 40, ay + 45);
+  } else if (data.isFinal) {
+    ctx.arc(cx, ay + 20, 50, Math.PI * 0.2, Math.PI * 0.8); // the end is in sight
   } else {
     ctx.arc(cx, ay + 80, 50, Math.PI * 1.2, Math.PI * 1.8);
   }
@@ -391,6 +393,16 @@ function layoutPlacard(ctx: SKRSContext2D, data: WallpaperData, w: number): Omit
 type Mood = 'happy' | 'stern' | 'alarmed';
 
 /**
+ * Ordinary exams tighten as they approach. The last one runs the other way: the nearer it gets,
+ * the nearer freedom is, so the character relaxes instead of panicking.
+ */
+function moodFor(days: number | null, isFinal = false): Mood {
+  if (days === null) return 'happy';
+  if (isFinal) return days <= 6 ? 'happy' : 'stern';
+  return days <= 6 ? 'alarmed' : days <= 29 ? 'stern' : 'happy';
+}
+
+/**
  * Draws the character with its feet at (0, 0) in the current transform, facing right.
  * Returns the hand position (where the placard stick is gripped) in the same coordinates.
  */
@@ -471,7 +483,7 @@ function drawCharacter(ctx: SKRSContext2D, mood: Mood): { handX: number; handY: 
 }
 
 function paintSign(ctx: SKRSContext2D, data: WallpaperData) {
-  const mood: Mood = data.days === null ? 'happy' : data.days <= 6 ? 'alarmed' : data.days <= 29 ? 'stern' : 'happy';
+  const mood = moodFor(data.days, data.isFinal);
 
   // Character: feet at (footX, groundY), leaning a few degrees into the raised arm
   const groundY = 2090;
@@ -509,20 +521,25 @@ function paintSign(ctx: SKRSContext2D, data: WallpaperData) {
 // ---------------------------------------------------------------------------
 // Style: stare — the character, head-on, arms crossed, looking at you. Yes, you.
 
-/** A rounded tube: white outline, black interior — covers whatever it's drawn over. */
+/**
+ * A rounded tube: white outline, black interior — covers whatever it's drawn over.
+ * Saves and restores, so the black interior pass can't leak into whatever is drawn next.
+ */
 function capsule(ctx: SKRSContext2D, x1: number, y1: number, x2: number, y2: number, thickness: number) {
+  ctx.save();
   ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = thickness; ctx.stroke();
   ctx.strokeStyle = '#000000'; ctx.lineWidth = thickness - 36; ctx.stroke();
+  ctx.restore();
 }
 
-function stareLineFor(days: number | null, isFinal = false): string {
+export function stareLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "We're done here.";
   if (isFinal) {
-    if (days <= 0) return 'Last one. Today.';
-    if (days === 1) return 'Tomorrow. The last one.';
-    if (days <= 6) return "One left. Don't fumble it.";
+    if (days <= 0) return "Last one. You've got this.";
+    if (days === 1) return 'Tomorrow. Then freedom.';
+    if (days <= 6) return 'One left. Almost there.';
     if (days <= 29) return 'Just the one now.';
     return 'One left, eventually.';
   }
@@ -534,7 +551,7 @@ function stareLineFor(days: number | null, isFinal = false): string {
 }
 
 function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
-  const mood: Mood = data.days === null ? 'happy' : data.days <= 6 ? 'alarmed' : data.days <= 29 ? 'stern' : 'happy';
+  const mood = moodFor(data.days, data.isFinal);
   const cx = W / 2;
 
   // --- Text block ---
@@ -597,6 +614,7 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
   // Face
   const ey = top + 250;
   ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 14;
   ctx.beginPath();
   if (mood === 'stern') {
@@ -645,12 +663,12 @@ function paintStare(ctx: SKRSContext2D, data: WallpaperData) {
 // ---------------------------------------------------------------------------
 // Style: panic — hands on head, mouth wide open. The closer the exam, the louder.
 
-function panicLineFor(days: number | null, isFinal = false): string {
+export function panicLineFor(days: number | null, isFinal = false): string {
   if (days === null) return "It's over. Breathe.";
   if (isFinal) {
-    if (days <= 0) return 'LAST ONE. TODAY.';
-    if (days === 1) return 'ONE LEFT. TOMORROW.';
-    if (days <= 6) return 'ONE LEFT.';
+    if (days <= 0) return 'TODAY. THEN FREE.';
+    if (days === 1) return 'TOMORROW. THEN FREE.';
+    if (days <= 6) return 'ONE LEFT!';
     if (days <= 29) return 'One left. Nearly out.';
     return 'One left. Eventually.';
   }
@@ -662,7 +680,7 @@ function panicLineFor(days: number | null, isFinal = false): string {
 }
 
 function paintPanic(ctx: SKRSContext2D, data: WallpaperData) {
-  const mood: Mood = data.days === null ? 'happy' : data.days <= 6 ? 'alarmed' : data.days <= 29 ? 'stern' : 'happy';
+  const mood = moodFor(data.days, data.isFinal);
   const cx = W / 2;
 
   // --- Text block ---
