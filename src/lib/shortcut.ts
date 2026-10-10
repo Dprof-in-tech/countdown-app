@@ -7,8 +7,7 @@
  * Android: publish the macro to MacroDroid's Template Store, then long-press your template in the
  * app to copy its link. Note these links only open inside MacroDroid, so the app has to be
  * installed first and the link is useless on a desktop. While this is empty the Android guide
- * falls back to written MacroDroid steps — still the automatic route, since a wallpaper that
- * doesn't refresh itself isn't the product.
+ * falls back to written MacroDroid steps.
  */
 export const SHORTCUT_TEMPLATE_URL = 'https://www.icloud.com/shortcuts/1cf749e92ce447b0919634d859656742';
 export const MACRO_TEMPLATE_URL = '';

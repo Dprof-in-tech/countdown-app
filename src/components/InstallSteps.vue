@@ -33,12 +33,6 @@ onMounted(() => {
 const wallpaperUrl = computed(() => props.url || localUrl.value);
 const hasTemplate = computed(() => SHORTCUT_TEMPLATE_URL.length > 0);
 const hasMacro = computed(() => MACRO_TEMPLATE_URL.length > 0);
-/**
- * Setting the wallpaper by hand, with no extra app. Never the default: the whole point is that
- * the number moves on its own, and this route doesn't. Kept only as a fallback for anyone who
- * won't install a macro app.
- */
-const manual = ref(false);
 
 watch([wallpaperUrl, onDesktop], async () => {
   if (!wallpaperUrl.value || !onDesktop.value) { qr.value = ''; return; }
@@ -137,37 +131,20 @@ async function copy() {
             </div>
           </template>
           <template v-else>
-            <h3 class="text-lg font-semibold leading-8">Put it on your lock screen</h3>
+            <h3 class="text-lg font-semibold leading-8">Build the macro</h3>
             <div class="card mt-3 p-4 text-sm leading-relaxed text-muted">
-              <div class="mb-4 flex gap-2">
-                <button type="button" class="btn-text text-xs" :class="!manual ? 'text-white underline underline-offset-4' : ''" @click="manual = false">Automatic</button>
-                <span class="text-dim">·</span>
-                <button type="button" class="btn-text text-xs" :class="manual ? 'text-white underline underline-offset-4' : ''" @click="manual = true">By hand, no auto-update</button>
-              </div>
-
-              <template v-if="manual">
-                <ol class="space-y-3">
-                  <li class="flex gap-3"><span class="text-dim">1</span><span>Open your link in Chrome — it loads today's wallpaper as a plain image</span></li>
-                  <li class="flex gap-3"><span class="text-dim">2</span><span>Long-press the image → <span class="text-white">Download image</span></span></li>
-                  <li class="flex gap-3"><span class="text-dim">3</span><span>Open it in Gallery/Photos → menu → <span class="text-white">Set as wallpaper</span> → <span class="text-white">Lock screen</span></span></li>
-                </ol>
-                <p class="mt-3 text-xs">Nothing to install, but the number is frozen until you repeat this. The automatic route is the one you want unless you really can't install the app.</p>
+              <template v-if="hasMacro">
+                <p class="mb-3">Install <span class="text-white">MacroDroid</span> (free) first — the next link only opens inside it.</p>
+                <a :href="MACRO_TEMPLATE_URL" target="_blank" rel="noopener" class="btn-primary">Get the macro</a>
+                <p class="mt-3">Tap it <span class="text-white">on your phone</span>, then paste your link into the HTTP Request action and enable the macro.</p>
               </template>
-
               <template v-else>
-                <template v-if="hasMacro">
-                  <p class="mb-3">Install <span class="text-white">MacroDroid</span> (free) first — the next link only opens inside it.</p>
-                  <a :href="MACRO_TEMPLATE_URL" target="_blank" rel="noopener" class="btn-primary">Get the macro</a>
-                  <p class="mt-3">Tap it <span class="text-white">on your phone</span>, then paste your link into the HTTP Request action and enable the macro.</p>
-                </template>
-                <template v-else>
-                  <p>Install <span class="text-white">MacroDroid</span> (free) → <span class="text-white">Add Macro</span>, then:</p>
-                  <ol class="mt-3 space-y-3">
-                    <li class="flex gap-3"><span class="text-dim">1</span><span>Action → <span class="text-white">HTTP Request</span>, method GET, paste your link, and tick the option to save the response to a file</span></li>
-                    <li class="flex gap-3"><span class="text-dim">2</span><span>Action → <span class="text-white">Set Wallpaper</span> → <span class="text-white">Lock screen</span> → choose that same file</span></li>
-                  </ol>
-                  <p class="mt-3">Run it once from the macro list to check it works.</p>
-                </template>
+                <p>Install <span class="text-white">MacroDroid</span> (free) → <span class="text-white">Add Macro</span>, then:</p>
+                <ol class="mt-3 space-y-3">
+                  <li class="flex gap-3"><span class="text-dim">1</span><span>Action → <span class="text-white">HTTP Request</span>, method GET, paste your link, and tick the option to save the response to a file</span></li>
+                  <li class="flex gap-3"><span class="text-dim">2</span><span>Action → <span class="text-white">Set Wallpaper</span> → <span class="text-white">Lock screen</span> → choose that same file</span></li>
+                </ol>
+                <p class="mt-3">Run it once from the macro list to check it works.</p>
               </template>
             </div>
           </template>
@@ -185,11 +162,8 @@ async function copy() {
               <span class="text-white">6:00 AM</span>, <span class="text-white">Daily</span> → choose <span class="text-white">Run Immediately</span> →
               pick the Shortcut you just made.
             </template>
-            <template v-else-if="!manual">
-              Add a trigger to the macro: <span class="text-white">Day/Time</span> → <span class="text-white">6:00</span>, every day. Save.
-            </template>
             <template v-else>
-              There's nothing to schedule on this route — repeat the three steps above whenever you want the number to move.
+              Add a trigger to the macro: <span class="text-white">Day/Time</span> → <span class="text-white">6:00</span>, every day. Save.
             </template>
             <p class="mt-3 text-xs">That's it. The countdown drops by one each morning on its own.</p>
           </div>
