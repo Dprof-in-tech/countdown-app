@@ -422,7 +422,7 @@ function downloadJson() {
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 id="install-title" class="text-3xl font-bold tracking-[-0.03em]">Installation Steps</h2>
-            <p class="mt-2 text-sm text-muted">Create an automation to run daily, then add the shortcut actions to update your lock screen.</p>
+            <p class="mt-2 text-sm text-muted">Two minutes, once. After that it refreshes itself every morning.</p>
           </div>
           <button type="button" @click="showInstall = false" class="btn-text -mr-2 -mt-1 px-2 text-2xl leading-none" aria-label="Close">×</button>
         </div>

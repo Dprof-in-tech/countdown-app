@@ -1,12 +1,13 @@
 /**
- * iCloud link to a ready-made Shortcut, so people can skip building the automation by hand.
+ * Ready-made automations, so people don't have to build one by hand.
  *
- * Apple signs shared Shortcuts, so this file can only be filled in from a phone:
- *   1. Shortcuts app → + → add "Get Contents of URL" then "Set Wallpaper Photo"
- *      (Lock Screen, Show Preview off). Leave the URL blank — people paste their own.
- *   2. Name it "Exam Countdown", then Share → Copy iCloud Link.
- *   3. Paste that link here.
+ * iOS: an iCloud link to a shared Shortcut. Apple signs these, so it can only be produced from a
+ * phone — Shortcuts → build it → Share → Copy iCloud Link.
  *
- * While this is empty the install guide falls back to the written steps.
+ * Android: publish the macro to MacroDroid's Template Store, then long-press your template in the
+ * app to copy its link. Note these links only open inside MacroDroid, so the app has to be
+ * installed first and the link is useless on a desktop. While this is empty the Android guide
+ * defaults to the no-app route, which needs nothing installed at all.
  */
-export const SHORTCUT_TEMPLATE_URL = '';
+export const SHORTCUT_TEMPLATE_URL = 'https://www.icloud.com/shortcuts/1cf749e92ce447b0919634d859656742';
+export const MACRO_TEMPLATE_URL = '';
