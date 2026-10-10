@@ -4,7 +4,7 @@ import { metrics } from '../lib/metrics';
 export const prerender = false;
 
 const stats = await metrics().getStats();
-const { renders, uniques, events } = stats;
+const { renders, uniques, events, eventsToday } = stats;
 const maxDay = Math.max(1, ...renders.last14.map((d) => d.count));
 const maxStyle = Math.max(1, ...renders.byStyle.map((s) => s.count));
 const styles = [...renders.byStyle].sort((a, b) => b.count - a.count);
@@ -81,10 +81,21 @@ Astro.response.headers.set('Cache-Control', 'public, max-age=60');
         <div class="flex justify-between p-4"><dt class="text-muted">Live previews on the page</dt><dd>{fmt(renders.bySource.preview)}</dd></div>
       </dl>
       <h2 class="mt-8 text-lg font-semibold">Funnel</h2>
+      <p class="mt-1 text-xs text-dim">Getting a schedule saved is easy; getting it onto a lock screen is the hard part. Today's column is the one to watch — it compares with the unique wallpapers above.</p>
       <dl class="card mt-3 divide-y divide-line text-sm">
-        <div class="flex justify-between p-4"><dt class="text-muted">Schedules saved</dt><dd>{fmt(events.save)}</dd></div>
-        <div class="flex justify-between p-4"><dt class="text-muted">Links copied</dt><dd>{fmt(events.copy)}</dd></div>
-        <div class="flex justify-between p-4"><dt class="text-muted">Install guide opened</dt><dd>{fmt(events.install_open)}</dd></div>
+        <div class="flex items-baseline justify-between gap-4 px-4 pb-2 pt-3 text-xs uppercase tracking-wider text-dim">
+          <dt></dt><dd class="flex gap-6"><span class="w-16 text-right">Today</span><span class="w-20 text-right">All time</span></dd>
+        </div>
+        {[
+          ['Schedules saved', eventsToday.save, events.save],
+          ['Links copied', eventsToday.copy, events.copy],
+          ['Install guide opened', eventsToday.install_open, events.install_open],
+        ].map(([label, today, all]) => (
+          <div class="flex items-baseline justify-between gap-4 p-4">
+            <dt class="text-muted">{label}</dt>
+            <dd class="flex gap-6"><span class="w-16 text-right text-white">{fmt(today as number)}</span><span class="w-20 text-right text-muted">{fmt(all as number)}</span></dd>
+          </div>
+        ))}
       </dl>
     </div>
   </section>

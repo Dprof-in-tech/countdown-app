@@ -3,8 +3,8 @@ import { buildWallpaperUrl, decodeExamsParam } from '../src/lib/link';
 import type { Exam } from '../src/lib/types';
 
 const exams: Exam[] = [
-  { id: '1', title: 'EEE 576: Intro, with comma', date: '2026-09-28', time: '09:00', datetime: '', color: '#111111' },
-  { id: '2', title: 'EEE 574', date: '2026-10-02', time: '09:00', datetime: '', color: '#222222' },
+  { id: '1', title: 'EEE 576: Intro, with comma', date: '2026-09-28', time: '09:00', color: '#111111' },
+  { id: '2', title: 'EEE 574', date: '2026-10-02', time: '09:00', color: '#222222' },
 ];
 
 describe('wallpaper link', () => {

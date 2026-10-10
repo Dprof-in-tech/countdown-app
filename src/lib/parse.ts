@@ -121,7 +121,6 @@ export function toExam(input: ExamInput, id = makeId()): Exam {
     date: input.date,
     time: input.time,
     ...(input.durationMinutes ? { durationMinutes: input.durationMinutes } : {}),
-    datetime: `${input.date}T${input.time}:00`,
     color: colorFor(input.title),
   };
 }

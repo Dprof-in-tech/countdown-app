@@ -3,9 +3,9 @@ import { saveExams, loadExams, clearExams, STORAGE_KEY } from '../src/lib/storag
 import type { Exam } from '../src/lib/types';
 
 const exams: Exam[] = [
-  { id: '1', title: 'EEE 576', date: '2026-09-28', time: '09:00', datetime: '2026-09-28T09:00:00', color: '#111111' },
-  { id: '2', title: 'EEE 574', date: '2026-10-02', time: '09:00', datetime: '2026-10-02T09:00:00', color: '#222222' },
-  { id: '3', title: 'EEE 512', date: '2026-10-05', time: '09:00', datetime: '2026-10-05T09:00:00', color: '#333333' },
+  { id: '1', title: 'EEE 576', date: '2026-09-28', time: '09:00', color: '#111111' },
+  { id: '2', title: 'EEE 574', date: '2026-10-02', time: '09:00', color: '#222222' },
+  { id: '3', title: 'EEE 512', date: '2026-10-05', time: '09:00', color: '#333333' },
 ];
 
 /** Minimal in-memory Storage — Node 25 ships a localStorage stub that shadows jsdom's. */

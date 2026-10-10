@@ -12,7 +12,6 @@ EEE 574: Discrete Control Systems, 2 Oct 2026, 9:00 am`;
       { title: 'EEE 574: Discrete Control Systems', date: '2026-10-02', time: '09:00' },
     ]);
     expect(result.exams[0].id).toBeTruthy();
-    expect(result.exams[0].datetime).toBe('2026-09-28T09:00:00');
   });
 
   it('1.2 parses date format variations', () => {
@@ -65,9 +64,9 @@ EEE 574, 2 Oct 2026, 9:00 am`);
 
   it('1.5b sortExams orders by date then time', () => {
     const sorted = sortExams([
-      { id: 'a', title: 'A', date: '2026-10-02', time: '14:00', datetime: '', color: '' },
-      { id: 'b', title: 'B', date: '2026-10-02', time: '09:00', datetime: '', color: '' },
-      { id: 'c', title: 'C', date: '2026-09-28', time: '09:00', datetime: '', color: '' },
+      { id: 'a', title: 'A', date: '2026-10-02', time: '14:00', color: '' },
+      { id: 'b', title: 'B', date: '2026-10-02', time: '09:00', color: '' },
+      { id: 'c', title: 'C', date: '2026-09-28', time: '09:00', color: '' },
     ]);
     expect(sorted.map((e) => e.id)).toEqual(['c', 'b', 'a']);
   });

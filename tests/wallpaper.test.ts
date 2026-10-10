@@ -65,7 +65,7 @@ describe('wallpaper generation', () => {
 
   it('3.3 wallpaper content changes day to day (days value differs)', async () => {
     const { getCountdown } = await import('../src/lib/countdown');
-    const exams = [{ id: '1', title: 'EEE 576', date: '2026-09-28', time: '09:00', datetime: '', color: '' }];
+    const exams = [{ id: '1', title: 'EEE 576', date: '2026-09-28', time: '09:00', color: '' }];
     expect(getCountdown(exams, new Date('2026-09-19T10:00:00Z'), 'UTC').days).toBe(9);
     expect(getCountdown(exams, new Date('2026-09-19T11:00:00Z'), 'UTC').days).toBe(9);
     expect(getCountdown(exams, new Date('2026-09-20T10:00:00Z'), 'UTC').days).toBe(8);

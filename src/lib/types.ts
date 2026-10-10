@@ -7,8 +7,6 @@ export interface Exam {
   time: string;
   /** How long the exam runs, when the schedule says so. Drives roll-over to the next exam. */
   durationMinutes?: number;
-  /** Naive ISO datetime (no zone) — "2026-09-28T09:00:00" */
-  datetime: string;
   /** Hex colour used as an accent in the UI */
   color: string;
 }

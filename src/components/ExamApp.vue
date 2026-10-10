@@ -7,6 +7,8 @@ import { buildWallpaperUrl } from '../lib/link';
 import { getCountdown } from '../lib/countdown';
 import { WALLPAPER_STYLES, parseStyle, type WallpaperStyle } from '../lib/styles';
 import InstallSteps from './InstallSteps.vue';
+import { track as sendEvent } from '../lib/track';
+import type { EventName } from '../lib/metrics';
 import Tour, { type TourStep } from './Tour.vue';
 
 const SAMPLE = `EEE 576: Introduction to Optimal Control, 28 Sep 2026, 9:00 am
@@ -28,6 +30,12 @@ const previewNonce = ref(0);
 const showInstall = ref(false);
 
 const style = ref<WallpaperStyle>('minimal');
+/** The link and Install button — where you need to be once a schedule is saved. */
+const actionsEl = ref<HTMLElement | null>(null);
+/** The text the table was last built from, so saving can parse first if you skipped the button. */
+const lastParsed = ref('');
+
+const track = (event: EventName) => sendEvent(event, style.value);
 const tz = ref('UTC');
 const origin = ref('');
 
@@ -97,12 +105,18 @@ watch(hasSaved, (v) => { if (tourStep.value === 3 && v) tourStep.value = 4; });
 watch(draft, () => { if (ready.value) dirty.value = true; }, { deep: true });
 
 function parse() {
+  lastParsed.value = text.value;
   const result = parseExams(text.value);
   errors.value = result.errors;
   if (result.success) {
     draft.value = result.exams;
     dirty.value = true;
   }
+}
+
+/** Build the table without making anyone hunt for a button — on blur, and again on save. */
+function parseIfNeeded() {
+  if (text.value.trim() && text.value !== lastParsed.value) parse();
 }
 
 function useSample() {
@@ -140,7 +154,6 @@ function updateField(exam: Exam, field: 'title' | 'date' | 'time' | 'duration', 
   }
   delete rowErrors.value[exam.id];
   exam[field] = parsed;
-  exam.datetime = `${exam.date}T${exam.time}:00`;
 }
 
 /** "3h", "90m", "2h 30m" — how a stored duration is shown in the table. */
@@ -172,13 +185,24 @@ function addRow() {
 
 const canSave = computed(() => draft.value.length > 0 && Object.keys(rowErrors.value).length === 0 && draft.value.every((e) => e.title));
 
+const saveEnabled = computed(() => draft.value.length > 0 || text.value.trim().length > 0);
+
 function save() {
+  parseIfNeeded();
   if (!canSave.value) return;
   saved.value = draft.value.map((e) => ({ ...e }));
   storageOk.value = saveExams(saved.value);
   dirty.value = false;
   previewNonce.value += 1;
   track('save');
+  // On a phone the link and Install button sit far below the fold. Take people there
+  // rather than leaving them to hunt for the next step. `center` keeps the wallpaper
+  // just above in shot, so the result and the action arrive together.
+  if (window.innerWidth < 1024) {
+    requestAnimationFrame(() => {
+      nextTick(() => actionsEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    });
+  }
 }
 
 function clearAll() {
@@ -202,15 +226,6 @@ async function copyLink() {
     // Clipboard blocked (e.g. non-secure context) — user can select the text field instead.
     (document.getElementById('wallpaper-link') as HTMLInputElement | null)?.select();
   }
-}
-
-/** Anonymous usage beacon — event name and style only. */
-function track(event: 'save' | 'copy' | 'install_open') {
-  try {
-    const body = JSON.stringify({ event, style: style.value });
-    if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([body], { type: 'application/json' }));
-    else fetch('/api/track', { method: 'POST', body, headers: { 'content-type': 'application/json' }, keepalive: true }).catch(() => {});
-  } catch { /* never block the UI on analytics */ }
 }
 
 function onKey(e: KeyboardEvent) {
@@ -239,7 +254,7 @@ function downloadJson() {
   <div>
   <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-20">
     <!-- LEFT: input -->
-    <div class="space-y-12" :class="hasSaved ? 'order-2 lg:order-1' : ''">
+    <div class="space-y-12">
       <section>
         <h1 class="text-5xl font-bold leading-[1.05] tracking-[-0.03em] sm:text-6xl">
           Your next exam,<br />on your lock screen.
@@ -260,7 +275,7 @@ function downloadJson() {
           </div>
         </div>
         <p class="mt-1 mb-3 text-sm text-muted">One per line: <span class="text-white">Course name, date, time</span></p>
-        <textarea id="bulk" v-model="text" rows="6" spellcheck="false"
+        <textarea id="bulk" v-model="text" rows="6" spellcheck="false" @blur="parseIfNeeded""
           placeholder="EEE 576: Introduction to Optimal Control, 28 Sep 2026, 9:00 am"
           class="field resize-y font-mono leading-relaxed"></textarea>
         <div class="mt-3 flex flex-wrap items-center gap-3">
@@ -329,7 +344,7 @@ function downloadJson() {
         </div>
 
         <div class="mt-4 flex flex-wrap items-center gap-4">
-          <button id="btn-save" type="button" @click="save" class="btn-primary" :disabled="!canSave">Save to Wallpaper</button>
+          <button id="btn-save" type="button" @click="save" class="btn-primary" :disabled="!saveEnabled">Save to Wallpaper</button>
           <button type="button" @click="downloadJson" class="btn-text" :disabled="!draft.length && !hasSaved">Download JSON</button>
           <button type="button" @click="clearAll" class="btn-text" :disabled="!draft.length && !hasSaved">Clear all</button>
           <span v-if="dirty && hasSaved" class="text-xs text-muted">Unsaved changes</span>
@@ -341,7 +356,7 @@ function downloadJson() {
     </div>
 
     <!-- RIGHT: output -->
-    <aside class="lg:sticky lg:top-8 lg:self-start" :class="hasSaved ? 'order-1 lg:order-2' : ''">
+    <aside class="lg:sticky lg:top-8 lg:self-start">
       <div class="card p-6">
         <!-- Phone -->
         <div class="mx-auto w-[240px]">
@@ -374,7 +389,7 @@ function downloadJson() {
         </div>
 
         <!-- Link + install -->
-        <div v-if="hasSaved" class="mt-6 border-t border-line pt-5">
+        <div v-if="hasSaved" ref="actionsEl" class="mt-6 border-t border-line pt-5">
           <p class="text-xs uppercase tracking-wider text-dim">Wallpaper link</p>
           <div class="mt-2 flex gap-2">
             <input id="wallpaper-link" :value="wallpaperUrl" readonly class="field min-w-0 flex-1 font-mono text-xs" />
@@ -387,7 +402,7 @@ function downloadJson() {
           </div>
           <p class="mt-2 text-xs text-dim">Fetched daily by a Shortcut. Timezone: {{ tz }}.</p>
           <div class="mt-4 flex items-center gap-4">
-            <button id="btn-install" type="button" @click="showInstall = true; track('install_open')" class="btn-outline flex-1">
+            <button id="btn-install" type="button" @click="showInstall = true; track('install_open')" :class="dirty ? 'btn-outline' : 'btn-primary'" class="flex-1">
               Install
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
             </button>

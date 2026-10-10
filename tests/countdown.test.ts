@@ -3,7 +3,7 @@ import { daysUntil, findNextExam, getCountdown } from '../src/lib/countdown';
 import type { Exam } from '../src/lib/types';
 
 const exam = (id: string, date: string, time = '09:00'): Exam => ({
-  id, title: id, date, time, datetime: `${date}T${time}:00`, color: '#000000',
+  id, title: id, date, time, color: '#000000',
 });
 
 const TZ = 'UTC';

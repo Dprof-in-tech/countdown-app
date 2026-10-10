@@ -48,6 +48,8 @@ export interface Stats {
   };
   uniques: { today: number; month: number };
   events: Record<EventName, number>;
+  /** The same events, today only — comparable with uniques.today */
+  eventsToday: Record<EventName, number>;
 }
 
 export function createMetrics(store: MetricsStore | null) {
@@ -75,11 +77,15 @@ export function createMetrics(store: MetricsStore | null) {
     },
 
     /** A client-side event (save / copy / install). Unknown names are ignored. */
-    async recordEvent(name: EventName, style?: string): Promise<boolean> {
+    async recordEvent(name: EventName, style?: string, now = new Date()): Promise<boolean> {
       if (!(EVENTS as readonly string[]).includes(name)) return false;
       if (!store) return true;
+      const day = iso(now);
       try {
         await store.incr(`m:events:${name}`);
+        // Also per-day, so the funnel can be compared against the daily unique-wallpaper count
+        await store.incr(`m:events:${name}:day:${day}`);
+        await store.expire(`m:events:${name}:day:${day}`, KEEP_DAYS);
         if (style && WALLPAPER_STYLES.some((s) => s.id === style)) await store.incr(`m:events:${name}:style:${style}`);
       } catch (err) {
         console.warn('[metrics] recordEvent failed', err);
@@ -101,6 +107,7 @@ export function createMetrics(store: MetricsStore | null) {
         },
         uniques: { today: 0, month: 0 },
         events: { save: 0, copy: 0, install_open: 0 },
+        eventsToday: { save: 0, copy: 0, install_open: 0 },
       };
       if (!store) return empty;
       try {
@@ -110,6 +117,7 @@ export function createMetrics(store: MetricsStore | null) {
           'm:renders:source:fetch', 'm:renders:source:preview',
           ...days.map((d) => `m:renders:day:${d}`),
           ...EVENTS.map((e) => `m:events:${e}`),
+          ...EVENTS.map((e) => `m:events:${e}:day:${iso(now)}`),
         ];
         const [values, uToday, uMonth] = await Promise.all([
           store.mget(...keys),
@@ -122,11 +130,13 @@ export function createMetrics(store: MetricsStore | null) {
         const bySource = { fetch: n(values[i++]), preview: n(values[i++]) };
         const last14 = days.map((date) => ({ date, count: n(values[i++]) }));
         const events = Object.fromEntries(EVENTS.map((e) => [e, n(values[i++])])) as Record<EventName, number>;
+        const eventsToday = Object.fromEntries(EVENTS.map((e) => [e, n(values[i++])])) as Record<EventName, number>;
         return {
           ...empty,
           renders: { total, today: last14[last14.length - 1].count, last14, byStyle, bySource },
           uniques: { today: n(uToday), month: n(uMonth) },
           events,
+          eventsToday,
         };
       } catch (err) {
         console.warn('[metrics] getStats failed', err);
